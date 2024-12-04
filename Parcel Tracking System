@@ -1,0 +1,419 @@
+import java.awt.*;
+import java.awt.event.*;
+import java.util.HashMap;
+import java.util.Map;
+A
+class User {
+    private String username;
+    private String password;
+    private String role;
+
+    public User(String username, String password, String role) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getRole() {
+        return role;
+    }
+}
+
+class Parcel {
+    private String trackingNumber;
+    private String destination;
+    private String status;
+
+    public Parcel(String trackingNumber, String destination, String status) {
+        this.trackingNumber = trackingNumber;
+        this.destination = destination;
+        this.status = status;
+    }
+
+    public String getTrackingNumber() {
+        return trackingNumber;
+    }
+
+    public String getDestination() {
+        return destination;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void updateStatus(String newStatus) {
+        this.status = newStatus;
+    }
+
+    @Override
+    public String toString() {
+        return "Tracking Number: " + trackingNumber + "\nDestination: " + destination + "\nStatus: " + status;
+    }
+}
+
+public class Main {
+    private static Map<String, User> userDatabase = new HashMap<>();
+    private static Map<String, Parcel> parcelDatabase = new HashMap<>();
+    private static Frame frame;
+    private static TextArea textArea;
+    private static String loggedInUser = null;
+
+    public static void main(String[] args) {
+        // Preload some users and parcels
+        userDatabase.put("admin", new User("admin", "admin123", "logistics"));
+        parcelDatabase.put("12345", new Parcel("12345", "New York", "Shipped"));
+        parcelDatabase.put("67890", new Parcel("67890", "Los Angeles", "In Transit"));
+
+        // Initialize the GUI
+        frame = new Frame("Parcel Tracking System");
+        frame.setSize(600, 400);
+        frame.setLayout(new FlowLayout());
+
+        // Create the TextArea to display information
+        textArea = new TextArea();
+        textArea.setEditable(false);
+        frame.add(textArea);
+
+        // Create buttons for the options
+        Button btnRegister = new Button("Register");
+        Button btnLogin = new Button("Login");
+        Button btnDispatch = new Button("Dispatch Parcel");
+        Button btnTrack = new Button("Track Parcel");
+        Button btnUpdateStatus = new Button("Update Status");
+        Button btnMarkDelivered = new Button("Mark as Delivered");
+        Button btnExit = new Button("Exit");
+
+        frame.add(btnRegister);
+        frame.add(btnLogin);
+        frame.add(btnDispatch);
+        frame.add(btnTrack);
+        frame.add(btnUpdateStatus);
+        frame.add(btnMarkDelivered);
+        frame.add(btnExit);
+
+        // Set action listeners for buttons
+        btnRegister.addActionListener(e -> openRegisterWindow());
+        btnLogin.addActionListener(e -> openLoginWindow());
+        btnDispatch.addActionListener(e -> openDispatchParcelWindow());
+        btnTrack.addActionListener(e -> openTrackParcelWindow());
+        btnUpdateStatus.addActionListener(e -> openUpdateParcelStatusWindow());
+        btnMarkDelivered.addActionListener(e -> markParcelDelivered());
+        btnExit.addActionListener(e -> System.exit(0));
+
+        // Adding WindowListener for close button on the main frame
+        frame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                System.exit(0); // Close the application
+            }
+        });
+
+        frame.setVisible(true);
+    }
+
+    // Open the Register User Window
+    private static void openRegisterWindow() {
+        Frame registerFrame = new Frame("Register New User");
+        registerFrame.setSize(400, 300);
+        registerFrame.setLayout(new GridLayout(5, 2)); // Using GridLayout for better alignment
+
+        Label usernameLabel = new Label("Username:");
+        TextField usernameField = new TextField(20);
+        Label passwordLabel = new Label("Password:");
+        TextField passwordField = new TextField(20);
+        passwordField.setEchoChar('*');
+        Label roleLabel = new Label("Role (customer/logistics):");
+        TextField roleField = new TextField(20);
+        Button registerButton = new Button("Register");
+
+        registerFrame.add(usernameLabel);
+        registerFrame.add(usernameField);
+        registerFrame.add(passwordLabel);
+        registerFrame.add(passwordField);
+        registerFrame.add(roleLabel);
+        registerFrame.add(roleField);
+        registerFrame.add(new Label("")); // Empty label for spacing
+        registerFrame.add(registerButton);
+
+        registerButton.addActionListener(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+            String role = roleField.getText();
+
+            if (username.isEmpty() || password.isEmpty() || role.isEmpty()) {
+                showMessage("Please fill in all fields!");
+            } else {
+                userDatabase.put(username, new User(username, password, role));
+                showMessage("User registered successfully!");
+                registerFrame.dispose(); // Close this window when done
+            }
+        });
+
+        // Adding WindowListener to handle closing of register window
+        registerFrame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                registerFrame.dispose();
+            }
+        });
+
+        registerFrame.setVisible(true);
+    }
+
+    // Open the Login Window
+    private static void openLoginWindow() {
+        Frame loginFrame = new Frame("Login");
+        loginFrame.setSize(400, 300);
+        loginFrame.setLayout(new GridLayout(3, 2)); // Using GridLayout for better alignment
+
+        Label usernameLabel = new Label("Username:");
+        TextField usernameField = new TextField(20);
+        Label passwordLabel = new Label("Password:");
+        TextField passwordField = new TextField(20);
+        passwordField.setEchoChar('*');
+        Button loginButton = new Button("Login");
+
+        loginFrame.add(usernameLabel);
+        loginFrame.add(usernameField);
+        loginFrame.add(passwordLabel);
+        loginFrame.add(passwordField);
+        loginFrame.add(new Label("")); // Empty label for spacing
+        loginFrame.add(loginButton);
+
+        loginButton.addActionListener(e -> {
+            String username = usernameField.getText();
+            String password = passwordField.getText();
+
+            User user = userDatabase.get(username);
+            if (user != null && user.getPassword().equals(password)) {
+                loggedInUser = username;
+                showMessage("Login successful! Role: " + user.getRole());
+                loginFrame.dispose(); // Close this window when done
+            } else {
+                showMessage("Invalid username or password.");
+            }
+        });
+
+        // Adding WindowListener to handle closing of login window
+        loginFrame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                loginFrame.dispose();
+            }
+        });
+
+        loginFrame.setVisible(true);
+    }
+
+    // Show a message in the text area
+    private static void showMessage(String message) {
+        textArea.setText(message);
+    }
+
+    // Open the Dispatch Parcel Window
+    private static void openDispatchParcelWindow() {
+        if (loggedInUser == null) {
+            showMessage("Please log in first.");
+            return;
+        }
+
+        Frame dispatchFrame = new Frame("Dispatch Parcel");
+        dispatchFrame.setSize(400, 300);
+        dispatchFrame.setLayout(new GridLayout(6, 2)); // Using GridLayout for better alignment
+
+        Label trackingLabel = new Label("Tracking Number:");
+        TextField trackingField = new TextField(20);
+        Label destinationLabel = new Label("Destination:");
+        TextField destinationField = new TextField(20);
+        Label statusLabel = new Label("Status:");
+        TextField statusField = new TextField(20);
+        statusField.setText("Shipped");
+        statusField.setEditable(false);
+        Label typeLabel = new Label("Type (Domestic/International):");
+        Choice typeChoice = new Choice();
+        typeChoice.add("Domestic");
+        typeChoice.add("International");
+        Label paymentLabel = new Label("Payment:");
+        TextField paymentField = new TextField(20);
+        paymentField.setEditable(false);
+        Button dispatchButton = new Button("Dispatch");
+        Button paymentButton = new Button("Proceed Payment");
+
+        dispatchFrame.add(trackingLabel);
+        dispatchFrame.add(trackingField);
+        dispatchFrame.add(destinationLabel);
+        dispatchFrame.add(destinationField);
+        dispatchFrame.add(statusLabel);
+        dispatchFrame.add(statusField);
+        dispatchFrame.add(typeLabel);
+        dispatchFrame.add(typeChoice);
+        dispatchFrame.add(paymentLabel);
+        dispatchFrame.add(paymentField);
+        dispatchFrame.add(dispatchButton);
+        dispatchFrame.add(paymentButton);
+
+        paymentButton.addActionListener(e -> {
+            String type = typeChoice.getSelectedItem();
+            int paymentAmount = type.equals("Domestic") ? 10 : 20; // Fixed amounts for domestic and international
+            paymentField.setText("$" + paymentAmount);
+        });
+
+        dispatchButton.addActionListener(e -> {
+            String trackingNumber = trackingField.getText();
+            String destination = destinationField.getText();
+            String status = statusField.getText();
+            String payment = paymentField.getText();
+
+            if (trackingNumber.isEmpty() || destination.isEmpty() || payment.isEmpty()) {
+                showMessage("Please fill in all fields and proceed with payment!");
+            } else {
+                parcelDatabase.put(trackingNumber, new Parcel(trackingNumber, destination, status));
+                showMessage("Parcel dispatched successfully!");
+                dispatchFrame.dispose(); // Close this window when done
+            }
+        });
+
+        // Adding WindowListener to handle closing of dispatch window
+        dispatchFrame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                dispatchFrame.dispose();
+            }
+        });
+
+        dispatchFrame.setVisible(true);
+    }
+
+    // Open the Track Parcel Window
+    private static void openTrackParcelWindow() {
+        Frame trackFrame = new Frame("Track Parcel");
+        trackFrame.setSize(400, 200);
+        trackFrame.setLayout(new GridLayout(2, 2)); // Using GridLayout for better alignment
+
+        Label trackingLabel = new Label("Tracking Number:");
+        TextField trackingField = new TextField(20);
+        Button trackButton = new Button("Track");
+
+        trackFrame.add(trackingLabel);
+        trackFrame.add(trackingField);
+        trackFrame.add(new Label("")); // Empty label for spacing
+        trackFrame.add(trackButton);
+
+        trackButton.addActionListener(e -> {
+            String trackingNumber = trackingField.getText();
+            Parcel parcel = parcelDatabase.get(trackingNumber);
+
+            if (parcel != null) {
+                showMessage(parcel.toString());
+                trackFrame.dispose(); // Close this window when done
+            } else {
+                showMessage("Parcel not found.");
+            }
+        });
+
+        // Adding WindowListener to handle closing of track window
+        trackFrame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                trackFrame.dispose();
+            }
+        });
+
+        trackFrame.setVisible(true);
+    }
+
+    // Open the Update Parcel Status Window
+    private static void openUpdateParcelStatusWindow() {
+        if (loggedInUser == null || !userDatabase.get(loggedInUser).getRole().equals("logistics")) {
+            showMessage("Only logistics personnel can update parcel status.");
+            return;
+        }
+
+        Frame updateFrame = new Frame("Update Parcel Status");
+        updateFrame.setSize(400, 300);
+        updateFrame.setLayout(new GridLayout(3, 2)); // Using GridLayout for better alignment
+
+        Label trackingLabel = new Label("Tracking Number:");
+        TextField trackingField = new TextField(20);
+        Label statusLabel = new Label("New Status:");
+        TextField statusField = new TextField(20);
+        Button updateButton = new Button("Update");
+
+        updateFrame.add(trackingLabel);
+        updateFrame.add(trackingField);
+        updateFrame.add(statusLabel);
+        updateFrame.add(statusField);
+        updateFrame.add(new Label("")); // Empty label for spacing
+        updateFrame.add(updateButton);
+
+        updateButton.addActionListener(e -> {
+            String trackingNumber = trackingField.getText();
+            String newStatus = statusField.getText();
+            Parcel parcel = parcelDatabase.get(trackingNumber);
+
+            if (parcel != null) {
+                parcel.updateStatus(newStatus);
+                showMessage("Status updated successfully!");
+                updateFrame.dispose(); // Close this window when done
+            } else {
+                showMessage("Parcel not found.");
+            }
+        });
+
+        // Adding WindowListener to handle closing of update window
+        updateFrame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                updateFrame.dispose();
+            }
+        });
+
+        updateFrame.setVisible(true);
+    }
+
+    // Mark a Parcel as Delivered
+    private static void markParcelDelivered() {
+        if (loggedInUser == null || !userDatabase.get(loggedInUser).getRole().equals("logistics")) {
+            showMessage("Only logistics personnel can mark parcels as delivered.");
+            return;
+        }
+
+        Frame deliveredFrame = new Frame("Mark as Delivered");
+        deliveredFrame.setSize(400, 200);
+        deliveredFrame.setLayout(new GridLayout(2, 2)); // Using GridLayout for better alignment
+
+        Label trackingLabel = new Label("Tracking Number:");
+        TextField trackingField = new TextField(20);
+        Button deliveredButton = new Button("Mark as Delivered");
+
+        deliveredFrame.add(trackingLabel);
+        deliveredFrame.add(trackingField);
+        deliveredFrame.add(new Label("")); // Empty label for spacing
+        deliveredFrame.add(deliveredButton);
+
+        deliveredButton.addActionListener(e -> {
+            String trackingNumber = trackingField.getText();
+            Parcel parcel = parcelDatabase.get(trackingNumber);
+
+            if (parcel != null) {
+                parcel.updateStatus("Delivered");
+                showMessage("Parcel marked as delivered!");
+                deliveredFrame.dispose(); // Close this window when done
+            } else {
+                showMessage("Parcel not found.");
+            }
+        });
+
+        // Adding WindowListener to handle closing of mark as delivered window
+        deliveredFrame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                deliveredFrame.dispose();
+            }
+        });
+
+        deliveredFrame.setVisible(true);
+    }
+}
